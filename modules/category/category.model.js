@@ -8,6 +8,7 @@ const CategoryModel = sequelize.define('categories', {
         primaryKey: true
     },
     name: {
+        allowNull: false,
         type: DataTypes.STRING
     },
     parent_id: {

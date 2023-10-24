@@ -8,3 +8,5 @@ exports.incrementCategoryValues = async (params = {}, transaction) => {
     const { where, field, by } = params
     return await CategoryModel.increment(field, { by, transaction, where })
 }
+
+exports.deleteACategory = async (where, transaction) => await CategoryModel.destroy({ transaction, where })

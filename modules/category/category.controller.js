@@ -59,31 +59,70 @@ exports.getCategoryChart = AsyncHandler(async (req, res, next) => {
             raw: true,
             nest: true
         }
-    );
-    // const result = []
-    // for (let i = 0; i < categories.length; i++) {
-    //     const category = categories[i]
-    //     if (category.depth < current.depth) {
-    //         for (let j = category.depth; j < current.depth; j++) {
-    //             parent = parent.parent
-    //         }
-    //     } else if (category.depth > current.depth) {
-    //         for (let j = current.depth; j < category.depth; j++) {
-    //             parent = current
-    //         }
-    //     }
-    //     category.parent = parent
-    //     category.children = []
-    //     if(parent) parent.children.push(category)
-    //     else {
-    //         result.push(category)
-    //     }
-    //     console.log({ category })
-    //     current = category
-    // }
-    // console.log('I am here')
+    )
+
+    const result = []
+    if (categories.length) {
+        result.push(categories[0])
+
+        categories[0].children = []
+        let previous = categories[0]
+        let parent = null
+        const parentObj = {}
+        for (let i = 1; i < categories.length; i++) {
+            const category = categories[i]
+
+            const preDepth = previous.depth
+            if (category.depth < preDepth) {
+                for (let j = category.depth; j <= preDepth; j++) {
+                    parent = parentObj[previous.id]
+                    previous = parent
+                }
+            } else if (category.depth > preDepth) {
+                parent = previous
+            }
+            category.children = []
+            if (parent) parent.children.push(category)
+            else {
+                result.push(category)
+            }
+            previous = category
+            parentObj[category.id] = parent
+        }
+    }
+
     res.status(200).json({
         success: true,
         data: result
+    })
+})
+
+exports.deleteCategory = AsyncHandler(async (req, res, next) => {
+    const { id } = req.body
+    await sequelize.transaction(async (transaction) => {
+        const category = await categoryHelper.getACategory({ where: { id } })
+        if (!category) throw new CustomError(404, 'Category not found')
+
+        const deleteCount = await categoryService.deleteACategory({ id }, transaction)
+        if (deleteCount) {
+            // To update other categories
+            await categoryService.incrementCategoryValues(
+                {
+                    where: { lft: { [Op.gt]: category.lft } },
+                    field: 'lft',
+                    by: -2
+                }, transaction)
+
+            await categoryService.incrementCategoryValues(
+                {
+                    where: { rgt: { [Op.gte]: category.lft }, id: { [Op.ne]: category.id } },
+                    field: 'rgt',
+                    by: -2
+                }, transaction)
+        }
+
+        res.status(200).json({
+            success: true
+        })
     })
 })

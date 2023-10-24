@@ -1,6 +1,7 @@
 const router = require('express').Router()
-const { createACategory, getCategoryChart } = require('./category.controller')
+const { createACategory, getCategoryChart, deleteCategory } = require('./category.controller')
 
+router.delete('/',deleteCategory)
 router.post('/',createACategory)
 router.get('/',getCategoryChart)
 
