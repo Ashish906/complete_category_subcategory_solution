@@ -1,0 +1,1 @@
+exports.categoryService = require('./category/category.service')
